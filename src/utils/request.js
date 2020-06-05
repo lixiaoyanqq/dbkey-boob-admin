@@ -8,10 +8,11 @@ const service = axios.create({
   timeout: 5000 // request timeout
 })
 
+// 请求拦截器
 service.interceptors.request.use(
   config => {
     if (store.getters.token) {
-      config.headers['X-Token'] = getToken()
+      config.headers['Authorization'] = `Bearer ${getToken()}`
     }
     return config
   },
@@ -21,14 +22,16 @@ service.interceptors.request.use(
   }
 )
 
+// 响应拦截器
 service.interceptors.response.use(
 
   response => {
     const res = response.data
 
-    if (res.code !== 20000) {
+    if (res.code !== 0) {
+      const errMsg = res.msg || '请求失败'
       Message({
-        message: res.message || 'Error',
+        message: errMsg,
         type: 'error',
         duration: 5 * 1000
       })
@@ -44,14 +47,16 @@ service.interceptors.response.use(
           })
         })
       }
-      return Promise.reject(new Error(res.message || 'Error'))
+      return Promise.reject(new Error(errMsg))
     } else {
       return res
     }
   },
   error => {
+    console.log('响应报错error', { error })
+    const { msg } = error.response.data
     Message({
-      message: error.message,
+      message: msg || '请求失败',
       type: 'error',
       duration: 5 * 1000
     })
